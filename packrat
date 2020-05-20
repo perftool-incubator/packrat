@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=bash
+# -*- mode: sh; indent-tabs-mode: nil; sh-basic-offset: 4 -*-
+
+if [ -z "${1}" -o ! -d "${1}" ]; then
+    echo "ERROR: You must specify a valid destination directory where data will be collected!"
+    exit 1
+else
+    DEST_DIR="${1}/packrat-archive"
+fi
+
+if [ -d "${DEST_DIR}" ]; then
+    echo "ERROR: A packrat archive already exists at '${DEST_DIR}'!"
+    exit 2
+elif ! mkdir "${DEST_DIR}"; then
+    echo "ERROR: Could not create destination directory '${DEST_DIR}' for collected data!"
+    exit 3
+fi
+
+################################################################################
+
+function header() {
+    echo "################################################################################"
+    echo "${1}"
+    echo "################################################################################"
+}
+
+function footer() {
+    echo -e "################################################################################\n\n"
+}
+
+function create_dir() {
+    local DEST="${1}"
+
+    if ! mkdir --verbose ${DEST}; then
+	echo "ERROR: Could not create '${DEST}'!"
+    fi
+}
+
+function run_collectors() {
+    local DEST="${1}"
+
+    collect_package_manager_info "${DEST}"
+    collect_cpu_info "${DEST}"
+    collect_device_info "${DEST}"
+    collect_system_info "${DEST}"
+    collect_kernel_info "${DEST}"
+}
+
+function collect_package_manager_info() {
+    local DEST="${1}/package-manager"
+
+    header "package-manager"
+    create_dir "${DEST}"
+
+    if which rpm > /dev/null 2>&1; then
+	rpm -qa > "${DEST}/rpm.qa.out" 2>&1
+    fi
+
+    footer
+}
+
+function collect_cpu_info() {
+    local DEST="${1}/cpu"
+
+    header "cpu"
+
+    create_dir "${DEST}"
+
+    lscpu > "${DEST}/lscpu.normal.out" 2>&1
+    lscpu --all --extended > "${DEST}/lscpu.all.out" 2>&1
+    lscpu --parse > "${DEST}/lscpu.parse.out" 2>&1
+
+    mkdir "${DEST}/vulnerabilities"
+    cp /sys/devices/system/cpu/vulnerabilities/* "${DEST}/vulnerabilities"
+
+    footer
+}
+
+function collect_device_info() {
+    local DEST="${1}/device"
+
+    header "device"
+
+    create_dir "${DEST}"
+
+    lspci -tv > "${DEST}/lspci.hierarchy.out" 2>&1
+    lspci -vvv > "${DEST}/lspci.verbose.out" 2>&1
+
+    footer
+}
+
+function collect_system_info() {
+    local DEST="${1}/system"
+
+    header "system"
+
+    create_dir "${DEST}"
+
+    dmidecode > "${DEST}/dmidecode.out" 2>&1
+    lstopo-no-graphics --whole-system --whole-io --verbose > "${DEST}/lstopo.out" 2>&1
+
+    footer
+}
+
+function collect_kernel_info() {
+    local DEST="${1}/kernel"
+
+    header "kernel"
+
+    create_dir "${DEST}"
+
+    uname --all > "${DEST}/uname.out" 2>&1
+    cp /proc/cmdline "${DEST}/proc-cmdline"
+    cp /proc/modules "${DEST}/proc-modules"
+
+    footer
+}
+
+################################################################################
+
+run_collectors "${DEST_DIR}" > "${DEST_DIR}/run_collectors.out" 2>&1
