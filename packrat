@@ -45,6 +45,7 @@ function run_collectors() {
     collect_device_info "${DEST}"
     collect_system_info "${DEST}"
     collect_kernel_info "${DEST}"
+    collect_block_info "${DEST}"
 }
 
 function collect_package_manager_info() {
@@ -113,6 +114,74 @@ function collect_kernel_info() {
     uname --all > "${DEST}/uname.out" 2>&1
     cp /proc/cmdline "${DEST}/proc-cmdline"
     cp /proc/modules "${DEST}/proc-modules"
+
+    footer
+}
+
+function collect_block_info() {
+    local DEST="${1}/block"
+
+    header "block"
+
+    create_dir "${DEST}"
+
+    local LSBLK="lsblk --all --topology --discard --fs --perms --paths"
+    ${LSBLK} > "${DEST}/lsblk.normal.out" 2>&1
+    ${LSBLK} --pairs > "${DEST}/lsblk.key-value.out" 2>&1
+
+    dmsetup ls > "${DEST}/dmsetup.ls.out" 2>&1
+    dmsetup table > "${DEST}/dmsetup.table.out" 2>&1
+
+    cp /proc/partitions "${DEST}/proc-partitions"
+    cp /proc/mounts "${DEST}/proc-mounts"
+    cp /proc/mdstat "${DEST}/proc-mdstat"
+
+    create_dir "${DEST}/lvm"
+    pvs --all --verbose > "${DEST}/lvm/pvs.out" 2>&1
+    vgs --all --verbose > "${DEST}/lvm/vgs.out" 2>&1
+    lvs --all --verbose > "${DEST}/lvm/lvs.out" 2>&1
+    pvdisplay --verbose > "${DEST}/lvm/pvdisplay.out" 2>&1
+    vgdisplay --verbose > "${DEST}/lvm/vgdisplay.out" 2>&1
+    lvdisplay --verbose --maps > "${DEST}/lvm/lvdisplay.out" 2>&1
+
+    if pushd /sys/block > /dev/null; then
+	create_dir "${DEST}/sys-block"
+
+	local BLKDEV=""
+	for BLKDEV in $(ls -1d *); do
+	    local BLKDEV_FILE="${DEST}/sys-block/${BLKDEV}"
+
+	    touch "${BLKDEV_FILE}"
+
+	    if pushd "${BLKDEV}" > /dev/null; then
+		local FILE=""
+		for FILE in $(find . -maxdepth 1 -type f | sort); do
+		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+		    echo "${PRINT_FILE}:" >> "${BLKDEV_FILE}"
+		    cat "${FILE}" >> "${BLKDEV_FILE}"
+		    echo >> "${BLKDEV_FILE}"
+		done
+
+		local SUBDIR=""
+		for SUBDIR in "queue" "mq"; do
+		    if pushd "${SUBDIR}" > /dev/null; then
+			for FILE in $(find . -type f | sort); do
+			    PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+			    echo "${SUBDIR}/${PRINT_FILE}:" >> "${BLKDEV_FILE}"
+			    cat "${FILE}" >> "${BLKDEV_FILE}"
+			    echo >> "${BLKDEV_FILE}"
+			done
+
+			popd > /dev/null
+		    fi
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
 
     footer
 }
