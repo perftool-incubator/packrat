@@ -119,6 +119,38 @@ function collect_kernel_info() {
     cp /proc/cmdline "${DEST}/proc-cmdline"
     cp /proc/modules "${DEST}/proc-modules"
 
+    if pushd /sys/module > /dev/null; then
+	create_dir "${DEST}/sys-module"
+
+	local MODULE=""
+	for MODULE in $(ls -1d * ); do
+	    local MODULE_FILE="${DEST}/sys-module/${MODULE}"
+
+	    touch "${MODULE_FILE}"
+
+	    if pushd "${MODULE}" > /dev/null; then
+		local SUBDIR=""
+		for SUBDIR in "parameters"; do
+		    if pushd "${SUBDIR}" > /dev/null; then
+			local FILE=""
+			for FILE in $(ls -1 *); do
+			    PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+			    echo "${SUBDIR}/${PRINT_FILE}:" >> "${MODULE_FILE}"
+			    cat "${FILE}" >> "${MODULE_FILE}"
+			    echo >> "${MODULE_FILE}"
+			done
+
+			popd > /dev/null
+		    fi
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
+
     footer
 }
 
