@@ -46,6 +46,7 @@ function run_collectors() {
     collect_system_info "${DEST}"
     collect_kernel_info "${DEST}"
     collect_block_info "${DEST}"
+    collect_memory_info "${DEST}"
 }
 
 function collect_package_manager_info() {
@@ -182,6 +183,22 @@ function collect_block_info() {
 
 	popd > /dev/null
     fi
+
+    footer
+}
+
+function collect_memory_info() {
+    local DEST="${1}/memory"
+
+    header "memory"
+
+    create_dir "${DEST}"
+
+    cp /proc/meminfo "${DEST}/proc-meminfo"
+    cp /proc/slabinfo "${DEST}/proc-slabinfo"
+    cp /proc/zoneinfo "${DEST}/proc-zoneinfo"
+    cp /proc/buddyinfo "${DEST}/proc-buddyinfo"
+    cp /proc/pagetypeinfo "${DEST}/proc-pagetypeinfo"
 
     footer
 }
