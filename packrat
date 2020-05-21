@@ -39,6 +39,7 @@ function run_collectors() {
     collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1 &
     collect_net_info "${DEST}" > "${DEST}/net.log" 2>&1 &
     collect_cgroup_info "${DEST}" > "${DEST}/cgroup.log" 2>&1 &
+    collect_libvirt_info "${DEST}" > "${DEST}/libvirt.log" 2>&1 &
 
     wait
 }
@@ -322,6 +323,47 @@ function collect_cgroup_info() {
 
 	popd > /dev/null
     fi
+}
+
+function collect_libvirt_info() {
+    local DEST="${1}/libvirt"
+
+    create_dir "${DEST}"
+
+    virsh sysinfo > "${DEST}/virsh.sysinfo.out" 2>&1
+    virsh nodeinfo > "${DEST}/virsh.nodeinfo.out" 2>&1
+    virsh nodecpumap > "${DEST}/virsh.nodecpumap.out" 2>&1
+    virsh capabilities > "${DEST}/virsh.capabilities.out" 2>&1
+    virsh domcapabilities > "${DEST}/virsh.domcapabilities.out" 2>&1
+    virsh list --all > "${DEST}/virsh.list.out" 2>&1
+    virsh net-list --all > "${DEST}/virsh.net-list.out" 2>&1
+    virsh iface-list --all > "${DEST}/virsh.iface-list.out" 2>&1
+    virsh pool-list --all > "${DEST}/virsh.pool-list.out" 2>&1
+
+    create_dir "${DEST}/domains"
+    local DOMAIN=""
+    for DOMAIN in $(virsh list --all --name); do
+	virsh dumpxml "${DOMAIN}" > "${DEST}/domains/${DOMAIN}.xml" 2>&1
+    done
+
+    create_dir "${DEST}/nets"
+    local NET=""
+    for NET in $(virsh net-list --all --name); do
+	virsh net-dumpxml "${NET}" > "${DEST}/nets/${NET}.xml" 2>&1
+    done
+
+    create_dir "${DEST}/nodedevs"
+    local NODEDEV=""
+    for NODEDEV in $(virsh nodedev-list); do
+	virsh nodedev-dumpxml "${NODEDEV}" > "${DEST}/nodedevs/${NODEDEV}.xml" 2>&1
+    done
+
+    create_dir "${DEST}/pools"
+    local POOL=""
+    for POOL in $(virsh pool-list --all --name); do
+	virsh pool-dumpxml "${POOL}" > "${DEST}/pools/${POOL}.xml" 2>&1
+	virsh vol-list --pool "${POOL}" --details > "${DEST}/pools/virsh.vol-list.${POOL}.out" 2>&1
+    done
 }
 
 ################################################################################
