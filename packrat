@@ -89,6 +89,8 @@ function collect_device_info() {
     lspci -tv > "${DEST}/lspci.hierarchy.out" 2>&1
     lspci -vvv > "${DEST}/lspci.verbose.out" 2>&1
 
+    cp /proc/interrupts "${DEST}/proc-interrupts"
+
     footer
 }
 
