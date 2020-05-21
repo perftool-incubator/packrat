@@ -30,13 +30,15 @@ function create_dir() {
 function run_collectors() {
     local DEST="${1}"
 
-    collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1
-    collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1
-    collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1
-    collect_system_info "${DEST}" > "${DEST}/system.log" 2>&1
-    collect_kernel_info "${DEST}" > "${DEST}/kernel.log" 2>&1
-    collect_block_info "${DEST}" > "${DEST}/block.log" 2>&1
-    collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1
+    collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1 &
+    collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1 &
+    collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1 &
+    collect_system_info "${DEST}" > "${DEST}/system.log" 2>&1 &
+    collect_kernel_info "${DEST}" > "${DEST}/kernel.log" 2>&1 &
+    collect_block_info "${DEST}" > "${DEST}/block.log" 2>&1 &
+    collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1 &
+
+    wait
 }
 
 function collect_package_manager_info() {
