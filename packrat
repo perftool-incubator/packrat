@@ -63,8 +63,23 @@ function collect_cpu_info() {
     lscpu --all --extended > "${DEST}/lscpu.all.out" 2>&1
     lscpu --parse > "${DEST}/lscpu.parse.out" 2>&1
 
-    mkdir "${DEST}/vulnerabilities"
-    cp /sys/devices/system/cpu/vulnerabilities/* "${DEST}/vulnerabilities"
+    cp /proc/cpuinfo "${DEST}/proc-cpuinfo"
+
+    if pushd /sys/devices/system/cpu > /dev/null; then
+	local CPU_FILE="${DEST}/sys-devices-system-cpu"
+
+	touch "${CPU_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+	    echo "${PRINT_FILE}:" >> "${CPU_FILE}"
+	    cat "${FILE}" >> "${CPU_FILE}" 2>&1
+	    echo >> "${CPU_FILE}"
+	done
+
+	popd > /dev/null
+    fi
 }
 
 function collect_device_info() {
