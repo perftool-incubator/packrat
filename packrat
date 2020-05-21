@@ -37,6 +37,7 @@ function run_collectors() {
     collect_kernel_info "${DEST}" > "${DEST}/kernel.log" 2>&1 &
     collect_block_info "${DEST}" > "${DEST}/block.log" 2>&1 &
     collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1 &
+    collect_net_info "${DEST}" > "${DEST}/net.log" 2>&1 &
 
     wait
 }
@@ -246,6 +247,40 @@ function collect_memory_info() {
 	    echo "${PRINT_FILE}:" >> "${THP_FILE}"
 	    cat "${FILE}" >> "${THP_FILE}" 2>&1
 	    echo >> "${THP_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+}
+
+function collect_net_info() {
+    local DEST="${1}/net"
+
+    create_dir "${DEST}"
+
+    ifconfig -a -v > "${DEST}/ifconfig.out" 2>&1
+    bridge link show > "${DEST}/bridge.link.out" 2>&1
+    brctl show > "${DEST}/brctl.out" 2>&1
+
+    ip link show > "${DEST}/ip.link.out" 2>&1
+    ip address show > "${DEST}/ip.address.out" 2>&1
+    ip route show > "${DEST}/ip.route.out" 2>&1
+    ip netns show > "${DEST}/ip.netns.out" 2>&1
+
+    nmcli --pretty > "${DEST}/nmcli.out" 2>&1
+    nmcli general status > "${DEST}/nmcli.general.status.out" 2>&1
+    nmcli device show > "${DEST}/nmcli.device.show.out" 2>&1
+    nmcli device status > "${DEST}/nmcli.device.status.out" 2>&1
+    nmcli connection show > "${DEST}/nmcli.connection.out" 2>&1
+
+    if pushd /sys/class/net > /dev/null; then
+	local ETHTOOL_FILE="${DEST}/ethtool.out"
+
+	touch "${ETHTOOL_FILE}"
+
+	for DEV in $(ls -1d *); do
+	    ethtool "${DEV}" >> "${ETHTOOL_FILE}" 2>&1
+	    echo >> "${ETHTOOL_FILE}"
 	done
 
 	popd > /dev/null
