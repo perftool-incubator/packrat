@@ -114,6 +114,7 @@ function collect_kernel_info() {
 
     create_dir "${DEST}"
 
+    dmesg --ctime --show-delta > "${DEST}/dmesg.out" 2>&1
     uname --all > "${DEST}/uname.out" 2>&1
     cp /proc/cmdline "${DEST}/proc-cmdline"
     cp /proc/modules "${DEST}/proc-modules"
