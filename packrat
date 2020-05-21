@@ -38,6 +38,7 @@ function run_collectors() {
     collect_block_info "${DEST}" > "${DEST}/block.log" 2>&1 &
     collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1 &
     collect_net_info "${DEST}" > "${DEST}/net.log" 2>&1 &
+    collect_cgroup_info "${DEST}" > "${DEST}/cgroup.log" 2>&1 &
 
     wait
 }
@@ -281,6 +282,42 @@ function collect_net_info() {
 	for DEV in $(ls -1d *); do
 	    ethtool "${DEV}" >> "${ETHTOOL_FILE}" 2>&1
 	    echo >> "${ETHTOOL_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+}
+
+function collect_cgroup_info() {
+    local DEST="${1}/cgroup"
+
+    create_dir "${DEST}"
+
+    local CPUSET_DIR=$(grep "cgroup/cpuset" /proc/mounts | awk '{ print $2 }')
+    if pushd "${CPUSET_DIR}" > /dev/null; then
+	local CPUSET_FILE="${DEST}/cpuset"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+	    echo "${PRINT_FILE}:" >> "${CPUSET_FILE}"
+	    cat "${FILE}" >> "${CPUSET_FILE}" 2>&1
+	    echo >> "${CPUSET_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+
+    local CPU_DIR=$(grep "cgroup/cpu," /proc/mounts | awk '{ print $2 }')
+    if pushd "${CPU_DIR}" > /dev/null; then
+	local CPU_FILE="${DEST}/cpu"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+	    echo "${PRINT_FILE}:" >> "${CPU_FILE}"
+	    cat "${FILE}" >> "${CPU_FILE}" 2>&1
+	    echo >> "${CPU_FILE}"
 	done
 
 	popd > /dev/null
