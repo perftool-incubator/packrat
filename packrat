@@ -268,6 +268,22 @@ function collect_memory_info() {
 
 	popd > /dev/null
     fi
+
+    if pushd /sys/devices/system/node > /dev/null; then
+	local NODE_FILE="${DEST}/sys-devices-system-node"
+
+	touch "${NODE_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f | grep -v "^\./node.*/memory"); do
+	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+	    echo "${PRINT_FILE}:" >> "${NODE_FILE}"
+	    cat "${FILE}" >> "${NODE_FILE}" 2>&1
+	    echo >> "${NODE_FILE}"
+	done
+
+	popd > /dev/null
+    fi
 }
 
 function collect_net_info() {
