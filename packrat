@@ -149,6 +149,22 @@ function collect_kernel_info() {
 
 	popd > /dev/null
     fi
+
+    if pushd /sys/devices/system/clocksource > /dev/null; then
+	local CLOCKSOURCE_FILE="${DEST}/sys-devices-system-clocksource"
+
+	touch "${CLOCKSOURCE_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+	    echo "${PRINT_FILE}:" >> "${CLOCKSOURCE_FILE}"
+	    cat "${FILE}" >> "${CLOCKSOURCE_FILE}" 2>&1
+	    echo >> "${CLOCKSOURCE_FILE}"
+	done
+
+	popd > /dev/null
+    fi
 }
 
 function collect_block_info() {
