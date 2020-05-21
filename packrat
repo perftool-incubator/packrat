@@ -237,6 +237,47 @@ function collect_memory_info() {
     cp /proc/buddyinfo "${DEST}/proc-buddyinfo"
     cp /proc/pagetypeinfo "${DEST}/proc-pagetypeinfo"
 
+    if pushd /sys/kernel/mm/hugepages > /dev/null; then
+	create_dir "${DEST}/sys-kernel-mm-hugepages"
+
+	local HP=""
+	for HP in $(ls -1d *); do
+	    local HP_FILE="${DEST}/sys-kernel-mm-hugepages/${HP}"
+
+	    touch "${HP_FILE}"
+
+	    if pushd "${HP}" > /dev/null; then
+		local FILE=""
+		for FILE in $(ls -1 *); do
+		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+		    echo "${PRINT_FILE}:" >> "${HP_FILE}"
+		    cat "${FILE}" >> "${HP_FILE}"
+		    echo >> "${HP_FILE}"
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
+
+    if pushd /sys/kernel/mm/transparent_hugepage > /dev/null; then
+	local THP_FILE="${DEST}/sys-kernel-mm-transparent_hugepage"
+
+	touch "${THP_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+	    echo "${PRINT_FILE}:" >> "${THP_FILE}"
+	    cat "${FILE}" >> "${THP_FILE}"
+	    echo >> "${THP_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+
     footer
 }
 
