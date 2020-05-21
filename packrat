@@ -106,16 +106,18 @@ function collect_kernel_info() {
 	    if pushd "${MODULE}" > /dev/null; then
 		local SUBDIR=""
 		for SUBDIR in "parameters"; do
-		    if pushd "${SUBDIR}" > /dev/null; then
-			local FILE=""
-			for FILE in $(ls -1 *); do
-			    PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-			    echo "${SUBDIR}/${PRINT_FILE}:" >> "${MODULE_FILE}"
-			    cat "${FILE}" >> "${MODULE_FILE}"
-			    echo >> "${MODULE_FILE}"
-			done
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    local FILE=""
+			    for FILE in $(ls -1 *); do
+				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+				echo "${SUBDIR}/${PRINT_FILE}:" >> "${MODULE_FILE}"
+				cat "${FILE}" >> "${MODULE_FILE}" 2>&1
+				echo >> "${MODULE_FILE}"
+			    done
 
-			popd > /dev/null
+			    popd > /dev/null
+			fi
 		    fi
 		done
 
@@ -165,21 +167,23 @@ function collect_block_info() {
 		for FILE in $(find . -maxdepth 1 -type f | sort); do
 		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 		    echo "${PRINT_FILE}:" >> "${BLKDEV_FILE}"
-		    cat "${FILE}" >> "${BLKDEV_FILE}"
+		    cat "${FILE}" >> "${BLKDEV_FILE}" 2>&1
 		    echo >> "${BLKDEV_FILE}"
 		done
 
 		local SUBDIR=""
 		for SUBDIR in "queue" "mq"; do
-		    if pushd "${SUBDIR}" > /dev/null; then
-			for FILE in $(find . -type f | sort); do
-			    PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-			    echo "${SUBDIR}/${PRINT_FILE}:" >> "${BLKDEV_FILE}"
-			    cat "${FILE}" >> "${BLKDEV_FILE}"
-			    echo >> "${BLKDEV_FILE}"
-			done
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    for FILE in $(find . -type f | sort); do
+				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+				echo "${SUBDIR}/${PRINT_FILE}:" >> "${BLKDEV_FILE}"
+				cat "${FILE}" >> "${BLKDEV_FILE}" 2>&1
+				echo >> "${BLKDEV_FILE}"
+			    done
 
-			popd > /dev/null
+			    popd > /dev/null
+			fi
 		    fi
 		done
 
@@ -216,7 +220,7 @@ function collect_memory_info() {
 		for FILE in $(ls -1 *); do
 		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 		    echo "${PRINT_FILE}:" >> "${HP_FILE}"
-		    cat "${FILE}" >> "${HP_FILE}"
+		    cat "${FILE}" >> "${HP_FILE}" 2>&1
 		    echo >> "${HP_FILE}"
 		done
 
@@ -236,7 +240,7 @@ function collect_memory_info() {
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${THP_FILE}"
-	    cat "${FILE}" >> "${THP_FILE}"
+	    cat "${FILE}" >> "${THP_FILE}" 2>&1
 	    echo >> "${THP_FILE}"
 	done
 
