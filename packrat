@@ -37,6 +37,13 @@ function append_file() {
     cat "${SRC}" >> "${DST}" 2>&1
 }
 
+function append_str() {
+    local STR="${1}"
+    local DST="${2}"
+
+    echo -e "${STR}" >> "${DST}" 2>&1
+}
+
 function create_dir() {
     local DEST="${1}"
 
@@ -92,9 +99,9 @@ function collect_cpu_info() {
 	local FILE=""
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    echo "${PRINT_FILE}:" >> "${CPU_FILE}"
+	    append_str "${PRINT_FILE}:" "${CPU_FILE}"
 	    append_file "${FILE}" "${CPU_FILE}"
-	    echo >> "${CPU_FILE}"
+	    append_str "" "${CPU_FILE}"
 	done
 
 	popd > /dev/null
@@ -152,9 +159,9 @@ function collect_kernel_info() {
 			    local FILE=""
 			    for FILE in $(ls -1 *); do
 				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-				echo "${SUBDIR}/${PRINT_FILE}:" >> "${MODULE_FILE}"
+				append_str "${SUBDIR}/${PRINT_FILE}:" "${MODULE_FILE}"
 				append_file "${FILE}" "${MODULE_FILE}"
-				echo >> "${MODULE_FILE}"
+				append_str "" "${MODULE_FILE}"
 			    done
 
 			    popd > /dev/null
@@ -177,9 +184,9 @@ function collect_kernel_info() {
 	local FILE=""
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    echo "${PRINT_FILE}:" >> "${CLOCKSOURCE_FILE}"
+	    append_str "${PRINT_FILE}:" "${CLOCKSOURCE_FILE}"
 	    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
-	    echo >> "${CLOCKSOURCE_FILE}"
+	    append_str "" "${CLOCKSOURCE_FILE}"
 	done
 
 	popd > /dev/null
@@ -223,9 +230,9 @@ function collect_block_info() {
 		local FILE=""
 		for FILE in $(find . -maxdepth 1 -type f | sort); do
 		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-		    echo "${PRINT_FILE}:" >> "${BLKDEV_FILE}"
+		    append_str "${PRINT_FILE}:" "${BLKDEV_FILE}"
 		    append_file "${FILE}" "${BLKDEV_FILE}"
-		    echo >> "${BLKDEV_FILE}"
+		    append_str "" "${BLKDEV_FILE}"
 		done
 
 		local SUBDIR=""
@@ -234,9 +241,9 @@ function collect_block_info() {
 			if pushd "${SUBDIR}" > /dev/null; then
 			    for FILE in $(find . -type f | sort); do
 				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-				echo "${SUBDIR}/${PRINT_FILE}:" >> "${BLKDEV_FILE}"
+				append_str "${SUBDIR}/${PRINT_FILE}:" "${BLKDEV_FILE}"
 				append_file "${FILE}" "${BLKDEV_FILE}"
-				echo >> "${BLKDEV_FILE}"
+				append_str "" "${BLKDEV_FILE}"
 			    done
 
 			    popd > /dev/null
@@ -276,9 +283,9 @@ function collect_memory_info() {
 		local FILE=""
 		for FILE in $(ls -1 *); do
 		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-		    echo "${PRINT_FILE}:" >> "${HP_FILE}"
+		    append_str "${PRINT_FILE}:" "${HP_FILE}"
 		    append_file "${FILE}" "${HP_FILE}"
-		    echo >> "${HP_FILE}"
+		    append_str "" "${HP_FILE}"
 		done
 
 		popd > /dev/null
@@ -296,9 +303,9 @@ function collect_memory_info() {
 	local FILE=""
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    echo "${PRINT_FILE}:" >> "${THP_FILE}"
+	    append_str "${PRINT_FILE}:" "${THP_FILE}"
 	    append_file "${FILE}" "${THP_FILE}"
-	    echo >> "${THP_FILE}"
+	    append_str "" "${THP_FILE}"
 	done
 
 	popd > /dev/null
@@ -312,9 +319,9 @@ function collect_memory_info() {
 	local FILE=""
 	for FILE in $(find . -type f | grep -v "^\./node.*/memory"); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    echo "${PRINT_FILE}:" >> "${NODE_FILE}"
+	    append_str "${PRINT_FILE}:" "${NODE_FILE}"
 	    append_file "${FILE}" "${NODE_FILE}"
-	    echo >> "${NODE_FILE}"
+	    append_str "" "${NODE_FILE}"
 	done
 
 	popd > /dev/null
@@ -367,9 +374,9 @@ function collect_cgroup_info() {
 	local FILE=""
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    echo "${PRINT_FILE}:" >> "${CPUSET_FILE}"
+	    append_str "${PRINT_FILE}:" "${CPUSET_FILE}"
 	    append_file "${FILE}" "${CPUSET_FILE}"
-	    echo >> "${CPUSET_FILE}"
+	    append_str "" "${CPUSET_FILE}"
 	done
 
 	popd > /dev/null
@@ -382,9 +389,9 @@ function collect_cgroup_info() {
 	local FILE=""
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    echo "${PRINT_FILE}:" >> "${CPU_FILE}"
+	    append_str "${PRINT_FILE}:" "${CPU_FILE}"
 	    append_file "${FILE}" "${CPU_FILE}"
-	    echo >> "${CPU_FILE}"
+	    append_str "" "${CPU_FILE}"
 	done
 
 	popd > /dev/null
