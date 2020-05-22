@@ -19,9 +19,21 @@ fi
 
 ################################################################################
 
+function list_args() {
+    while [ ${#} -ne 0 ]; do
+	echo -n "\"${1}\" "
+	shift
+    done
+}
+
 function copy() {
     local SRC="${1}"
     local DST="${2}"
+
+    if [ "${#}" -ne 2 ]; then
+	echo "ERROR: 'copy' requires two arguments (not ["$(list_args "${@}")"])"
+	return
+    fi
 
     # use cat with redirect so that errors (ie. file not found) are
     # captured in place
@@ -32,6 +44,16 @@ function append_file() {
     local SRC="${1}"
     local DST="${2}"
 
+    if [ "${#}" -ne 2 ]; then
+	echo "ERROR: 'append_file' requires two arguments (not ["$(list_args "${@}")"])"
+	return
+    fi
+
+    if [ ! -e "${DST}" ]; then
+	echo "ERROR: 'append_file' requires a valid destination file (not [${DST}])"
+	return
+    fi
+
     # use cat with redirect to that errors (ie. file not found) are
     # captured in place
     cat "${SRC}" >> "${DST}" 2>&1
@@ -40,6 +62,16 @@ function append_file() {
 function append_str() {
     local STR="${1}"
     local DST="${2}"
+
+    if [ "${#}" -ne 2 ]; then
+	echo "ERROR: 'append_str' requires two arguments (not ["$(list_args "${@}")"])"
+	return
+    fi
+
+    if [ ! -e "${DST}" ]; then
+	echo "ERROR: 'append_str' requires a valid destination file (not [${DST}])"
+	return
+    fi
 
     echo -e "${STR}" >> "${DST}" 2>&1
 }
@@ -371,6 +403,8 @@ function collect_cgroup_info() {
     if pushd "${CPUSET_DIR}" > /dev/null; then
 	local CPUSET_FILE="${DEST}/cpuset"
 
+	touch "${CPUSET_FILE}"
+
 	local FILE=""
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
@@ -385,6 +419,8 @@ function collect_cgroup_info() {
     local CPU_DIR=$(grep "cgroup/cpu," /proc/mounts | awk '{ print $2 }')
     if pushd "${CPU_DIR}" > /dev/null; then
 	local CPU_FILE="${DEST}/cpu"
+
+	touch "${CPU_FILE}"
 
 	local FILE=""
 	for FILE in $(find . -type f); do
