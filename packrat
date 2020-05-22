@@ -19,6 +19,13 @@ fi
 
 ################################################################################
 
+function clean_path() {
+    local PATH="${@}"
+
+    # remove './' from the beginning of the PATH string
+    echo -n "${PATH#./}"
+}
+
 function list_args() {
     while [ ${#} -ne 0 ]; do
 	echo -n "\"${1}\" "
@@ -130,8 +137,7 @@ function collect_cpu_info() {
 
 	local FILE=""
 	for FILE in $(find . -type f); do
-	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    append_str "${PRINT_FILE}:" "${CPU_FILE}"
+	    append_str "$(clean_path ${FILE}):" "${CPU_FILE}"
 	    append_file "${FILE}" "${CPU_FILE}"
 	    append_str "" "${CPU_FILE}"
 	done
@@ -190,8 +196,7 @@ function collect_kernel_info() {
 			if pushd "${SUBDIR}" > /dev/null; then
 			    local FILE=""
 			    for FILE in $(ls -1 *); do
-				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-				append_str "${SUBDIR}/${PRINT_FILE}:" "${MODULE_FILE}"
+				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${MODULE_FILE}"
 				append_file "${FILE}" "${MODULE_FILE}"
 				append_str "" "${MODULE_FILE}"
 			    done
@@ -215,8 +220,7 @@ function collect_kernel_info() {
 
 	local FILE=""
 	for FILE in $(find . -type f); do
-	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    append_str "${PRINT_FILE}:" "${CLOCKSOURCE_FILE}"
+	    append_str "$(clean_path ${FILE}):" "${CLOCKSOURCE_FILE}"
 	    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
 	    append_str "" "${CLOCKSOURCE_FILE}"
 	done
@@ -234,8 +238,7 @@ function collect_kernel_info() {
 	    if pushd "${GROUP}" > /dev/null; then
 		local FILE=""
 		for FILE in $(find . -type f); do
-		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-		    append_str "${GROUP}/${PRINT_FILE}:" "${CLOCKSOURCE_FILE}"
+		    append_str "${GROUP}/$(clean_path ${FILE}):" "${CLOCKSOURCE_FILE}"
 		    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
 		    append_str "" "${CLOCKSOURCE_FILE}"
 		done
@@ -284,8 +287,7 @@ function collect_block_info() {
 	    if pushd "${BLKDEV}" > /dev/null; then
 		local FILE=""
 		for FILE in $(find . -maxdepth 1 -type f | sort); do
-		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-		    append_str "${PRINT_FILE}:" "${BLKDEV_FILE}"
+		    append_str "$(clean_path ${FILE}):" "${BLKDEV_FILE}"
 		    append_file "${FILE}" "${BLKDEV_FILE}"
 		    append_str "" "${BLKDEV_FILE}"
 		done
@@ -295,8 +297,7 @@ function collect_block_info() {
 		    if [ -d "${SUBDIR}" ]; then
 			if pushd "${SUBDIR}" > /dev/null; then
 			    for FILE in $(find . -type f | sort); do
-				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-				append_str "${SUBDIR}/${PRINT_FILE}:" "${BLKDEV_FILE}"
+				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${BLKDEV_FILE}"
 				append_file "${FILE}" "${BLKDEV_FILE}"
 				append_str "" "${BLKDEV_FILE}"
 			    done
@@ -337,8 +338,7 @@ function collect_memory_info() {
 	    if pushd "${HP}" > /dev/null; then
 		local FILE=""
 		for FILE in $(ls -1 *); do
-		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-		    append_str "${PRINT_FILE}:" "${HP_FILE}"
+		    append_str "$(clean_path ${FILE}):" "${HP_FILE}"
 		    append_file "${FILE}" "${HP_FILE}"
 		    append_str "" "${HP_FILE}"
 		done
@@ -357,8 +357,7 @@ function collect_memory_info() {
 
 	local FILE=""
 	for FILE in $(find . -type f); do
-	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    append_str "${PRINT_FILE}:" "${THP_FILE}"
+	    append_str "$(clean_path ${FILE}):" "${THP_FILE}"
 	    append_file "${FILE}" "${THP_FILE}"
 	    append_str "" "${THP_FILE}"
 	done
@@ -373,8 +372,7 @@ function collect_memory_info() {
 
 	local FILE=""
 	for FILE in $(find . -type f | grep -v "^\./node.*/memory"); do
-	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    append_str "${PRINT_FILE}:" "${NODE_FILE}"
+	    append_str "$(clean_path ${FILE}):" "${NODE_FILE}"
 	    append_file "${FILE}" "${NODE_FILE}"
 	    append_str "" "${NODE_FILE}"
 	done
@@ -430,8 +428,7 @@ function collect_cgroup_info() {
 
 	local FILE=""
 	for FILE in $(find . -type f); do
-	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    append_str "${PRINT_FILE}:" "${CPUSET_FILE}"
+	    append_str "$(clean_path ${FILE}):" "${CPUSET_FILE}"
 	    append_file "${FILE}" "${CPUSET_FILE}"
 	    append_str "" "${CPUSET_FILE}"
 	done
@@ -447,8 +444,7 @@ function collect_cgroup_info() {
 
 	local FILE=""
 	for FILE in $(find . -type f); do
-	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-	    append_str "${PRINT_FILE}:" "${CPU_FILE}"
+	    append_str "$(clean_path ${FILE}):" "${CPU_FILE}"
 	    append_file "${FILE}" "${CPU_FILE}"
 	    append_str "" "${CPU_FILE}"
 	done
