@@ -28,6 +28,15 @@ function copy() {
     cat "${SRC}" > "${DST}" 2>&1
 }
 
+function append_file() {
+    local SRC="${1}"
+    local DST="${2}"
+
+    # use cat with redirect to that errors (ie. file not found) are
+    # captured in place
+    cat "${SRC}" >> "${DST}" 2>&1
+}
+
 function create_dir() {
     local DEST="${1}"
 
@@ -84,7 +93,7 @@ function collect_cpu_info() {
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${CPU_FILE}"
-	    cat "${FILE}" >> "${CPU_FILE}" 2>&1
+	    append_file "${FILE}" "${CPU_FILE}"
 	    echo >> "${CPU_FILE}"
 	done
 
@@ -144,7 +153,7 @@ function collect_kernel_info() {
 			    for FILE in $(ls -1 *); do
 				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 				echo "${SUBDIR}/${PRINT_FILE}:" >> "${MODULE_FILE}"
-				cat "${FILE}" >> "${MODULE_FILE}" 2>&1
+				append_file "${FILE}" "${MODULE_FILE}"
 				echo >> "${MODULE_FILE}"
 			    done
 
@@ -169,7 +178,7 @@ function collect_kernel_info() {
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${CLOCKSOURCE_FILE}"
-	    cat "${FILE}" >> "${CLOCKSOURCE_FILE}" 2>&1
+	    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
 	    echo >> "${CLOCKSOURCE_FILE}"
 	done
 
@@ -215,7 +224,7 @@ function collect_block_info() {
 		for FILE in $(find . -maxdepth 1 -type f | sort); do
 		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 		    echo "${PRINT_FILE}:" >> "${BLKDEV_FILE}"
-		    cat "${FILE}" >> "${BLKDEV_FILE}" 2>&1
+		    append_file "${FILE}" "${BLKDEV_FILE}"
 		    echo >> "${BLKDEV_FILE}"
 		done
 
@@ -226,7 +235,7 @@ function collect_block_info() {
 			    for FILE in $(find . -type f | sort); do
 				PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 				echo "${SUBDIR}/${PRINT_FILE}:" >> "${BLKDEV_FILE}"
-				cat "${FILE}" >> "${BLKDEV_FILE}" 2>&1
+				append_file "${FILE}" "${BLKDEV_FILE}"
 				echo >> "${BLKDEV_FILE}"
 			    done
 
@@ -268,7 +277,7 @@ function collect_memory_info() {
 		for FILE in $(ls -1 *); do
 		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 		    echo "${PRINT_FILE}:" >> "${HP_FILE}"
-		    cat "${FILE}" >> "${HP_FILE}" 2>&1
+		    append_file "${FILE}" "${HP_FILE}"
 		    echo >> "${HP_FILE}"
 		done
 
@@ -288,7 +297,7 @@ function collect_memory_info() {
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${THP_FILE}"
-	    cat "${FILE}" >> "${THP_FILE}" 2>&1
+	    append_file "${FILE}" "${THP_FILE}"
 	    echo >> "${THP_FILE}"
 	done
 
@@ -304,7 +313,7 @@ function collect_memory_info() {
 	for FILE in $(find . -type f | grep -v "^\./node.*/memory"); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${NODE_FILE}"
-	    cat "${FILE}" >> "${NODE_FILE}" 2>&1
+	    append_file "${FILE}" "${NODE_FILE}"
 	    echo >> "${NODE_FILE}"
 	done
 
@@ -359,7 +368,7 @@ function collect_cgroup_info() {
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${CPUSET_FILE}"
-	    cat "${FILE}" >> "${CPUSET_FILE}" 2>&1
+	    append_file "${FILE}" "${CPUSET_FILE}"
 	    echo >> "${CPUSET_FILE}"
 	done
 
@@ -374,7 +383,7 @@ function collect_cgroup_info() {
 	for FILE in $(find . -type f); do
 	    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
 	    echo "${PRINT_FILE}:" >> "${CPU_FILE}"
-	    cat "${FILE}" >> "${CPU_FILE}" 2>&1
+	    append_file "${FILE}" "${CPU_FILE}"
 	    echo >> "${CPU_FILE}"
 	done
 
