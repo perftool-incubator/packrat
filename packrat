@@ -223,6 +223,29 @@ function collect_kernel_info() {
 
 	popd > /dev/null
     fi
+
+    if pushd /sys/class/iommu > /dev/null; then
+	local IOMMU_FILE="${DEST}/sys-class-iommu"
+
+	touch "${IOMMU_FILE}"
+
+	local GROUP=""
+	for GROUP in $(ls -1d *); do
+	    if pushd "${GROUP}" > /dev/null; then
+		local FILE=""
+		for FILE in $(find . -type f); do
+		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
+		    append_str "${GROUP}/${PRINT_FILE}:" "${CLOCKSOURCE_FILE}"
+		    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
+		    append_str "" "${CLOCKSOURCE_FILE}"
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
 }
 
 function collect_block_info() {
