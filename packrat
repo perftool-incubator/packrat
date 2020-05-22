@@ -19,20 +19,74 @@ fi
 
 ################################################################################
 
-function header() {
-    echo "################################################################################"
-    echo "${1}"
-    echo "################################################################################"
+function clean_path() {
+    local PATH="${@}"
+
+    # remove './' from the beginning of the PATH string
+    echo -n "${PATH#./}"
 }
 
-function footer() {
-    echo -e "################################################################################\n\n"
+function list_args() {
+    while [ ${#} -ne 0 ]; do
+	echo -n "\"${1}\" "
+	shift
+    done
+}
+
+function copy() {
+    local SRC="${1}"
+    local DST="${2}"
+
+    if [ "${#}" -ne 2 ]; then
+	echo "ERROR: 'copy' requires two arguments (not ["$(list_args "${@}")"])"
+	return
+    fi
+
+    # use cat with redirect so that errors (ie. file not found) are
+    # captured in place
+    cat "${SRC}" > "${DST}" 2>&1
+}
+
+function append_file() {
+    local SRC="${1}"
+    local DST="${2}"
+
+    if [ "${#}" -ne 2 ]; then
+	echo "ERROR: 'append_file' requires two arguments (not ["$(list_args "${@}")"])"
+	return
+    fi
+
+    if [ ! -e "${DST}" ]; then
+	echo "ERROR: 'append_file' requires a valid destination file (not [${DST}])"
+	return
+    fi
+
+    # use cat with redirect to that errors (ie. file not found) are
+    # captured in place
+    cat "${SRC}" >> "${DST}" 2>&1
+}
+
+function append_str() {
+    local STR="${1}"
+    local DST="${2}"
+
+    if [ "${#}" -ne 2 ]; then
+	echo "ERROR: 'append_str' requires two arguments (not ["$(list_args "${@}")"])"
+	return
+    fi
+
+    if [ ! -e "${DST}" ]; then
+	echo "ERROR: 'append_str' requires a valid destination file (not [${DST}])"
+	return
+    fi
+
+    echo -e "${STR}" >> "${DST}" 2>&1
 }
 
 function create_dir() {
     local DEST="${1}"
 
-    if ! mkdir --verbose ${DEST}; then
+    if ! mkdir ${DEST}; then
 	echo "ERROR: Could not create '${DEST}'!"
     fi
 }
@@ -40,31 +94,33 @@ function create_dir() {
 function run_collectors() {
     local DEST="${1}"
 
-    collect_package_manager_info "${DEST}"
-    collect_cpu_info "${DEST}"
-    collect_device_info "${DEST}"
-    collect_system_info "${DEST}"
-    collect_kernel_info "${DEST}"
-    collect_block_info "${DEST}"
+    collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1 &
+    collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1 &
+    collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1 &
+    collect_system_info "${DEST}" > "${DEST}/system.log" 2>&1 &
+    collect_kernel_info "${DEST}" > "${DEST}/kernel.log" 2>&1 &
+    collect_block_info "${DEST}" > "${DEST}/block.log" 2>&1 &
+    collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1 &
+    collect_net_info "${DEST}" > "${DEST}/net.log" 2>&1 &
+    collect_cgroup_info "${DEST}" > "${DEST}/cgroup.log" 2>&1 &
+    collect_libvirt_info "${DEST}" > "${DEST}/libvirt.log" 2>&1 &
+    collect_firewall_info "${DEST}" > "${DEST}/firewall.log" 2>&1 &
+
+    wait
 }
 
 function collect_package_manager_info() {
     local DEST="${1}/package-manager"
 
-    header "package-manager"
     create_dir "${DEST}"
 
     if which rpm > /dev/null 2>&1; then
 	rpm -qa > "${DEST}/rpm.qa.out" 2>&1
     fi
-
-    footer
 }
 
 function collect_cpu_info() {
     local DEST="${1}/cpu"
-
-    header "cpu"
 
     create_dir "${DEST}"
 
@@ -72,56 +128,131 @@ function collect_cpu_info() {
     lscpu --all --extended > "${DEST}/lscpu.all.out" 2>&1
     lscpu --parse > "${DEST}/lscpu.parse.out" 2>&1
 
-    mkdir "${DEST}/vulnerabilities"
-    cp /sys/devices/system/cpu/vulnerabilities/* "${DEST}/vulnerabilities"
+    copy "/proc/cpuinfo" "${DEST}/proc-cpuinfo"
 
-    footer
+    if pushd /sys/devices/system/cpu > /dev/null; then
+	local CPU_FILE="${DEST}/sys-devices-system-cpu"
+
+	touch "${CPU_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    append_str "$(clean_path ${FILE}):" "${CPU_FILE}"
+	    append_file "${FILE}" "${CPU_FILE}"
+	    append_str "" "${CPU_FILE}"
+	done
+
+	popd > /dev/null
+    fi
 }
 
 function collect_device_info() {
     local DEST="${1}/device"
-
-    header "device"
 
     create_dir "${DEST}"
 
     lspci -tv > "${DEST}/lspci.hierarchy.out" 2>&1
     lspci -vvv > "${DEST}/lspci.verbose.out" 2>&1
 
-    footer
+    copy "/proc/interrupts" "${DEST}/proc-interrupts"
 }
 
 function collect_system_info() {
     local DEST="${1}/system"
 
-    header "system"
-
     create_dir "${DEST}"
 
     dmidecode > "${DEST}/dmidecode.out" 2>&1
     lstopo-no-graphics --whole-system --whole-io --verbose > "${DEST}/lstopo.out" 2>&1
-
-    footer
 }
 
 function collect_kernel_info() {
     local DEST="${1}/kernel"
 
-    header "kernel"
-
     create_dir "${DEST}"
 
+    dmesg --ctime --show-delta > "${DEST}/dmesg.out" 2>&1
     uname --all > "${DEST}/uname.out" 2>&1
-    cp /proc/cmdline "${DEST}/proc-cmdline"
-    cp /proc/modules "${DEST}/proc-modules"
+    lsmod > "${DEST}/lsmod.out" 2>&1
+    sysctl --all > "${DEST}/sysctl.out" 2>&1
+    getenforce > "${DEST}/getenforce.out" 2>&1
 
-    footer
+    copy "/proc/cmdline" "${DEST}/proc-cmdline"
+    copy "/proc/modules" "${DEST}/proc-modules"
+
+    if pushd /sys/module > /dev/null; then
+	create_dir "${DEST}/sys-module"
+
+	local MODULE=""
+	for MODULE in $(ls -1d * 2> /dev/null); do
+	    local MODULE_FILE="${DEST}/sys-module/${MODULE}"
+
+	    touch "${MODULE_FILE}"
+
+	    if pushd "${MODULE}" > /dev/null; then
+		local SUBDIR=""
+		for SUBDIR in "parameters"; do
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    local FILE=""
+			    for FILE in $(ls -1 *); do
+				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${MODULE_FILE}"
+				append_file "${FILE}" "${MODULE_FILE}"
+				append_str "" "${MODULE_FILE}"
+			    done
+
+			    popd > /dev/null
+			fi
+		    fi
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
+
+    if pushd /sys/devices/system/clocksource > /dev/null; then
+	local CLOCKSOURCE_FILE="${DEST}/sys-devices-system-clocksource"
+
+	touch "${CLOCKSOURCE_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    append_str "$(clean_path ${FILE}):" "${CLOCKSOURCE_FILE}"
+	    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
+	    append_str "" "${CLOCKSOURCE_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+
+    if pushd /sys/class/iommu > /dev/null; then
+	local IOMMU_FILE="${DEST}/sys-class-iommu"
+
+	touch "${IOMMU_FILE}"
+
+	local GROUP=""
+	for GROUP in $(ls -1d * 2> /dev/null); do
+	    if pushd "${GROUP}" > /dev/null; then
+		local FILE=""
+		for FILE in $(find . -type f); do
+		    append_str "${GROUP}/$(clean_path ${FILE}):" "${CLOCKSOURCE_FILE}"
+		    append_file "${FILE}" "${CLOCKSOURCE_FILE}"
+		    append_str "" "${CLOCKSOURCE_FILE}"
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
 }
 
 function collect_block_info() {
     local DEST="${1}/block"
-
-    header "block"
 
     create_dir "${DEST}"
 
@@ -132,9 +263,9 @@ function collect_block_info() {
     dmsetup ls > "${DEST}/dmsetup.ls.out" 2>&1
     dmsetup table > "${DEST}/dmsetup.table.out" 2>&1
 
-    cp /proc/partitions "${DEST}/proc-partitions"
-    cp /proc/mounts "${DEST}/proc-mounts"
-    cp /proc/mdstat "${DEST}/proc-mdstat"
+    copy "/proc/partitions" "${DEST}/proc-partitions"
+    copy "/proc/mounts" "${DEST}/proc-mounts"
+    copy "/proc/mdstat" "${DEST}/proc-mdstat"
 
     create_dir "${DEST}/lvm"
     pvs --all --verbose > "${DEST}/lvm/pvs.out" 2>&1
@@ -148,7 +279,7 @@ function collect_block_info() {
 	create_dir "${DEST}/sys-block"
 
 	local BLKDEV=""
-	for BLKDEV in $(ls -1d *); do
+	for BLKDEV in $(ls -1d * 2> /dev/null); do
 	    local BLKDEV_FILE="${DEST}/sys-block/${BLKDEV}"
 
 	    touch "${BLKDEV_FILE}"
@@ -156,23 +287,23 @@ function collect_block_info() {
 	    if pushd "${BLKDEV}" > /dev/null; then
 		local FILE=""
 		for FILE in $(find . -maxdepth 1 -type f | sort); do
-		    local PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-		    echo "${PRINT_FILE}:" >> "${BLKDEV_FILE}"
-		    cat "${FILE}" >> "${BLKDEV_FILE}"
-		    echo >> "${BLKDEV_FILE}"
+		    append_str "$(clean_path ${FILE}):" "${BLKDEV_FILE}"
+		    append_file "${FILE}" "${BLKDEV_FILE}"
+		    append_str "" "${BLKDEV_FILE}"
 		done
 
 		local SUBDIR=""
 		for SUBDIR in "queue" "mq"; do
-		    if pushd "${SUBDIR}" > /dev/null; then
-			for FILE in $(find . -type f | sort); do
-			    PRINT_FILE=$(echo "${FILE}" | sed -e "s|\./||")
-			    echo "${SUBDIR}/${PRINT_FILE}:" >> "${BLKDEV_FILE}"
-			    cat "${FILE}" >> "${BLKDEV_FILE}"
-			    echo >> "${BLKDEV_FILE}"
-			done
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    for FILE in $(find . -type f | sort); do
+				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${BLKDEV_FILE}"
+				append_file "${FILE}" "${BLKDEV_FILE}"
+				append_str "" "${BLKDEV_FILE}"
+			    done
 
-			popd > /dev/null
+			    popd > /dev/null
+			fi
 		    fi
 		done
 
@@ -182,10 +313,199 @@ function collect_block_info() {
 
 	popd > /dev/null
     fi
+}
 
-    footer
+function collect_memory_info() {
+    local DEST="${1}/memory"
+
+    create_dir "${DEST}"
+
+    copy "/proc/meminfo" "${DEST}/proc-meminfo"
+    copy "/proc/slabinfo" "${DEST}/proc-slabinfo"
+    copy "/proc/zoneinfo" "${DEST}/proc-zoneinfo"
+    copy "/proc/buddyinfo" "${DEST}/proc-buddyinfo"
+    copy "/proc/pagetypeinfo" "${DEST}/proc-pagetypeinfo"
+
+    if pushd /sys/kernel/mm/hugepages > /dev/null; then
+	create_dir "${DEST}/sys-kernel-mm-hugepages"
+
+	local HP=""
+	for HP in $(ls -1d * 2> /dev/null); do
+	    local HP_FILE="${DEST}/sys-kernel-mm-hugepages/${HP}"
+
+	    touch "${HP_FILE}"
+
+	    if pushd "${HP}" > /dev/null; then
+		local FILE=""
+		for FILE in $(ls -1 *); do
+		    append_str "$(clean_path ${FILE}):" "${HP_FILE}"
+		    append_file "${FILE}" "${HP_FILE}"
+		    append_str "" "${HP_FILE}"
+		done
+
+		popd > /dev/null
+	    fi
+	done
+
+	popd > /dev/null
+    fi
+
+    if pushd /sys/kernel/mm/transparent_hugepage > /dev/null; then
+	local THP_FILE="${DEST}/sys-kernel-mm-transparent_hugepage"
+
+	touch "${THP_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    append_str "$(clean_path ${FILE}):" "${THP_FILE}"
+	    append_file "${FILE}" "${THP_FILE}"
+	    append_str "" "${THP_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+
+    if pushd /sys/devices/system/node > /dev/null; then
+	local NODE_FILE="${DEST}/sys-devices-system-node"
+
+	touch "${NODE_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f | grep -v "^\./node.*/memory"); do
+	    append_str "$(clean_path ${FILE}):" "${NODE_FILE}"
+	    append_file "${FILE}" "${NODE_FILE}"
+	    append_str "" "${NODE_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+}
+
+function collect_net_info() {
+    local DEST="${1}/net"
+
+    create_dir "${DEST}"
+
+    ifconfig -a -v > "${DEST}/ifconfig.out" 2>&1
+    bridge link show > "${DEST}/bridge.link.out" 2>&1
+    brctl show > "${DEST}/brctl.out" 2>&1
+
+    ip link show > "${DEST}/ip.link.out" 2>&1
+    ip address show > "${DEST}/ip.address.out" 2>&1
+    ip route show > "${DEST}/ip.route.out" 2>&1
+    ip netns show > "${DEST}/ip.netns.out" 2>&1
+
+    nmcli --pretty > "${DEST}/nmcli.out" 2>&1
+    nmcli general status > "${DEST}/nmcli.general.status.out" 2>&1
+    nmcli device show > "${DEST}/nmcli.device.show.out" 2>&1
+    nmcli device status > "${DEST}/nmcli.device.status.out" 2>&1
+    nmcli connection show > "${DEST}/nmcli.connection.out" 2>&1
+
+    if pushd /sys/class/net > /dev/null; then
+	local ETHTOOL_FILE="${DEST}/ethtool.out"
+
+	touch "${ETHTOOL_FILE}"
+
+	for DEV in $(ls -1d * 2> /dev/null); do
+	    ethtool "${DEV}" >> "${ETHTOOL_FILE}" 2>&1
+	    echo >> "${ETHTOOL_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+}
+
+function collect_cgroup_info() {
+    local DEST="${1}/cgroup"
+
+    create_dir "${DEST}"
+
+    local CPUSET_DIR=$(grep "cgroup/cpuset" /proc/mounts | awk '{ print $2 }')
+    if pushd "${CPUSET_DIR}" > /dev/null; then
+	local CPUSET_FILE="${DEST}/cpuset"
+
+	touch "${CPUSET_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    append_str "$(clean_path ${FILE}):" "${CPUSET_FILE}"
+	    append_file "${FILE}" "${CPUSET_FILE}"
+	    append_str "" "${CPUSET_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+
+    local CPU_DIR=$(grep "cgroup/cpu," /proc/mounts | awk '{ print $2 }')
+    if pushd "${CPU_DIR}" > /dev/null; then
+	local CPU_FILE="${DEST}/cpu"
+
+	touch "${CPU_FILE}"
+
+	local FILE=""
+	for FILE in $(find . -type f); do
+	    append_str "$(clean_path ${FILE}):" "${CPU_FILE}"
+	    append_file "${FILE}" "${CPU_FILE}"
+	    append_str "" "${CPU_FILE}"
+	done
+
+	popd > /dev/null
+    fi
+}
+
+function collect_libvirt_info() {
+    local DEST="${1}/libvirt"
+
+    create_dir "${DEST}"
+
+    virsh sysinfo > "${DEST}/virsh.sysinfo.out" 2>&1
+    virsh nodeinfo > "${DEST}/virsh.nodeinfo.out" 2>&1
+    virsh nodecpumap > "${DEST}/virsh.nodecpumap.out" 2>&1
+    virsh capabilities > "${DEST}/virsh.capabilities.out" 2>&1
+    virsh domcapabilities > "${DEST}/virsh.domcapabilities.out" 2>&1
+    virsh list --all > "${DEST}/virsh.list.out" 2>&1
+    virsh net-list --all > "${DEST}/virsh.net-list.out" 2>&1
+    virsh iface-list --all > "${DEST}/virsh.iface-list.out" 2>&1
+    virsh pool-list --all > "${DEST}/virsh.pool-list.out" 2>&1
+
+    create_dir "${DEST}/domains"
+    local DOMAIN=""
+    for DOMAIN in $(virsh list --all --name); do
+	virsh dumpxml "${DOMAIN}" > "${DEST}/domains/${DOMAIN}.xml" 2>&1
+    done
+
+    create_dir "${DEST}/nets"
+    local NET=""
+    for NET in $(virsh net-list --all --name); do
+	virsh net-dumpxml "${NET}" > "${DEST}/nets/${NET}.xml" 2>&1
+    done
+
+    create_dir "${DEST}/nodedevs"
+    local NODEDEV=""
+    for NODEDEV in $(virsh nodedev-list); do
+	virsh nodedev-dumpxml "${NODEDEV}" > "${DEST}/nodedevs/${NODEDEV}.xml" 2>&1
+    done
+
+    create_dir "${DEST}/pools"
+    local POOL=""
+    for POOL in $(virsh pool-list --all --name); do
+	virsh pool-dumpxml "${POOL}" > "${DEST}/pools/${POOL}.xml" 2>&1
+	virsh vol-list --pool "${POOL}" --details > "${DEST}/pools/virsh.vol-list.${POOL}.out" 2>&1
+    done
+}
+
+function collect_firewall_info() {
+    local DEST="${1}/firewall"
+
+    create_dir "${DEST}"
+
+    iptables -nvL -t filter > "${DEST}/iptables.filter.out" 2>&1
+    iptables -nvL -t nat > "${DEST}/iptables.nat.out" 2>&1
+    ebtables -L > "${DEST}/ebtables.out" 2>&1
+    nft list ruleset > "${DEST}/nft.out" 2>&1
+    firewall-cmd --list-all > "${DEST}/firewall-cmd.list-all.out" 2>&1
 }
 
 ################################################################################
 
-run_collectors "${DEST_DIR}" > "${DEST_DIR}/run_collectors.out" 2>&1
+run_collectors "${DEST_DIR}"
