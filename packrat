@@ -19,6 +19,15 @@ fi
 
 ################################################################################
 
+function copy() {
+    local SRC="${1}"
+    local DST="${2}"
+
+    # use cat with redirect so that errors (ie. file not found) are
+    # captured in place
+    cat "${SRC}" > "${DST}" 2>&1
+}
+
 function create_dir() {
     local DEST="${1}"
 
@@ -64,7 +73,7 @@ function collect_cpu_info() {
     lscpu --all --extended > "${DEST}/lscpu.all.out" 2>&1
     lscpu --parse > "${DEST}/lscpu.parse.out" 2>&1
 
-    cp /proc/cpuinfo "${DEST}/proc-cpuinfo"
+    copy "/proc/cpuinfo" "${DEST}/proc-cpuinfo"
 
     if pushd /sys/devices/system/cpu > /dev/null; then
 	local CPU_FILE="${DEST}/sys-devices-system-cpu"
@@ -91,7 +100,7 @@ function collect_device_info() {
     lspci -tv > "${DEST}/lspci.hierarchy.out" 2>&1
     lspci -vvv > "${DEST}/lspci.verbose.out" 2>&1
 
-    cp /proc/interrupts "${DEST}/proc-interrupts"
+    copy "/proc/interrupts" "${DEST}/proc-interrupts"
 }
 
 function collect_system_info() {
@@ -114,8 +123,8 @@ function collect_kernel_info() {
     sysctl --all > "${DEST}/sysctl.out" 2>&1
     getenforce > "${DEST}/getenforce.out" 2>&1
 
-    cp /proc/cmdline "${DEST}/proc-cmdline"
-    cp /proc/modules "${DEST}/proc-modules"
+    copy "/proc/cmdline" "${DEST}/proc-cmdline"
+    copy "/proc/modules" "${DEST}/proc-modules"
 
     if pushd /sys/module > /dev/null; then
 	create_dir "${DEST}/sys-module"
@@ -180,9 +189,9 @@ function collect_block_info() {
     dmsetup ls > "${DEST}/dmsetup.ls.out" 2>&1
     dmsetup table > "${DEST}/dmsetup.table.out" 2>&1
 
-    cp /proc/partitions "${DEST}/proc-partitions"
-    cp /proc/mounts "${DEST}/proc-mounts"
-    cp /proc/mdstat "${DEST}/proc-mdstat"
+    copy "/proc/partitions" "${DEST}/proc-partitions"
+    copy "/proc/mounts" "${DEST}/proc-mounts"
+    copy "/proc/mdstat" "${DEST}/proc-mdstat"
 
     create_dir "${DEST}/lvm"
     pvs --all --verbose > "${DEST}/lvm/pvs.out" 2>&1
@@ -239,11 +248,11 @@ function collect_memory_info() {
 
     create_dir "${DEST}"
 
-    cp /proc/meminfo "${DEST}/proc-meminfo"
-    cp /proc/slabinfo "${DEST}/proc-slabinfo"
-    cp /proc/zoneinfo "${DEST}/proc-zoneinfo"
-    cp /proc/buddyinfo "${DEST}/proc-buddyinfo"
-    cp /proc/pagetypeinfo "${DEST}/proc-pagetypeinfo"
+    copy "/proc/meminfo" "${DEST}/proc-meminfo"
+    copy "/proc/slabinfo" "${DEST}/proc-slabinfo"
+    copy "/proc/zoneinfo" "${DEST}/proc-zoneinfo"
+    copy "/proc/buddyinfo" "${DEST}/proc-buddyinfo"
+    copy "/proc/pagetypeinfo" "${DEST}/proc-pagetypeinfo"
 
     if pushd /sys/kernel/mm/hugepages > /dev/null; then
 	create_dir "${DEST}/sys-kernel-mm-hugepages"
