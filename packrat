@@ -184,7 +184,7 @@ function collect_kernel_info() {
 	create_dir "${DEST}/sys-module"
 
 	local MODULE=""
-	for MODULE in $(ls -1d * ); do
+	for MODULE in $(ls -1d * 2> /dev/null); do
 	    local MODULE_FILE="${DEST}/sys-module/${MODULE}"
 
 	    touch "${MODULE_FILE}"
@@ -234,7 +234,7 @@ function collect_kernel_info() {
 	touch "${IOMMU_FILE}"
 
 	local GROUP=""
-	for GROUP in $(ls -1d *); do
+	for GROUP in $(ls -1d * 2> /dev/null); do
 	    if pushd "${GROUP}" > /dev/null; then
 		local FILE=""
 		for FILE in $(find . -type f); do
@@ -279,7 +279,7 @@ function collect_block_info() {
 	create_dir "${DEST}/sys-block"
 
 	local BLKDEV=""
-	for BLKDEV in $(ls -1d *); do
+	for BLKDEV in $(ls -1d * 2> /dev/null); do
 	    local BLKDEV_FILE="${DEST}/sys-block/${BLKDEV}"
 
 	    touch "${BLKDEV_FILE}"
@@ -330,7 +330,7 @@ function collect_memory_info() {
 	create_dir "${DEST}/sys-kernel-mm-hugepages"
 
 	local HP=""
-	for HP in $(ls -1d *); do
+	for HP in $(ls -1d * 2> /dev/null); do
 	    local HP_FILE="${DEST}/sys-kernel-mm-hugepages/${HP}"
 
 	    touch "${HP_FILE}"
@@ -406,7 +406,7 @@ function collect_net_info() {
 
 	touch "${ETHTOOL_FILE}"
 
-	for DEV in $(ls -1d *); do
+	for DEV in $(ls -1d * 2> /dev/null); do
 	    ethtool "${DEV}" >> "${ETHTOOL_FILE}" 2>&1
 	    echo >> "${ETHTOOL_FILE}"
 	done
