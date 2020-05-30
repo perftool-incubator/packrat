@@ -267,6 +267,9 @@ function collect_block_info() {
     copy "/proc/mounts" "${DEST}/proc-mounts"
     copy "/proc/mdstat" "${DEST}/proc-mdstat"
 
+    findmnt > "${DEST}/findmnt.out" 2>&1
+    findmnt --json > "${DEST}/findmnt.json.out" 2>&1
+
     create_dir "${DEST}/lvm"
     pvs --all --verbose > "${DEST}/lvm/pvs.out" 2>&1
     vgs --all --verbose > "${DEST}/lvm/vgs.out" 2>&1
@@ -390,10 +393,10 @@ function collect_net_info() {
     bridge link show > "${DEST}/bridge.link.out" 2>&1
     brctl show > "${DEST}/brctl.out" 2>&1
 
-    ip link show > "${DEST}/ip.link.out" 2>&1
-    ip address show > "${DEST}/ip.address.out" 2>&1
-    ip route show > "${DEST}/ip.route.out" 2>&1
-    ip netns show > "${DEST}/ip.netns.out" 2>&1
+    ip -json -pretty -statistics -details link show > "${DEST}/ip.link.out" 2>&1
+    ip -json -pretty -statistics -details address show > "${DEST}/ip.address.out" 2>&1
+    ip -json -pretty -statistics -details route show > "${DEST}/ip.route.out" 2>&1
+    ip -json -pretty -statistics -details netns show > "${DEST}/ip.netns.out" 2>&1
 
     nmcli --pretty > "${DEST}/nmcli.out" 2>&1
     nmcli general status > "${DEST}/nmcli.general.status.out" 2>&1
