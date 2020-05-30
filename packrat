@@ -267,6 +267,9 @@ function collect_block_info() {
     copy "/proc/mounts" "${DEST}/proc-mounts"
     copy "/proc/mdstat" "${DEST}/proc-mdstat"
 
+    findmnt > "${DEST}/findmnt.out" 2>&1
+    findmnt --json > "${DEST}/findmnt.json.out" 2>&1
+
     create_dir "${DEST}/lvm"
     pvs --all --verbose > "${DEST}/lvm/pvs.out" 2>&1
     vgs --all --verbose > "${DEST}/lvm/vgs.out" 2>&1
