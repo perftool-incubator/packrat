@@ -6,7 +6,9 @@ if [ -z "${1}" -o ! -d "${1}" ]; then
     echo "ERROR: You must specify a valid destination directory where data will be collected!"
     exit 1
 else
-    DEST_DIR="${1}/packrat-archive"
+    DEST_DIR="${1}"
+    DEST_DIR=$(readlink -e ${DEST_DIR})
+    DEST_DIR="${DEST_DIR}/packrat-archive"
 fi
 
 if [ -d "${DEST_DIR}" ]; then
