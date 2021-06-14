@@ -6,7 +6,9 @@ if [ -z "${1}" -o ! -d "${1}" ]; then
     echo "ERROR: You must specify a valid destination directory where data will be collected!"
     exit 1
 else
-    DEST_DIR="${1}/packrat-archive"
+    DEST_DIR="${1}"
+    DEST_DIR=$(readlink -e ${DEST_DIR})
+    DEST_DIR="${DEST_DIR}/packrat-archive"
 fi
 
 if [ -d "${DEST_DIR}" ]; then
@@ -94,6 +96,7 @@ function create_dir() {
 function run_collectors() {
     local DEST="${1}"
 
+    collect_distro_info "${DEST}" > "${DEST}/distro.log" 2>&1 &
     collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1 &
     collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1 &
     collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1 &
@@ -107,6 +110,14 @@ function run_collectors() {
     collect_firewall_info "${DEST}" > "${DEST}/firewall.log" 2>&1 &
 
     wait
+}
+
+function collect_distro_info() {
+    local DEST="${1}/distro"
+
+    create_dir "${DEST}"
+
+    copy "/etc/os-release" "${DEST}/os-release"
 }
 
 function collect_package_manager_info() {
