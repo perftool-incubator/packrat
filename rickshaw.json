@@ -1,0 +1,19 @@
+{
+    "rickshaw-utility": {
+        "schema": {
+            "version": "2021.06.16"
+        }
+    },
+    "utility": "packrat",
+    "controller": {
+        "post-script": "%utility-dir%packrat-post-process"
+    },
+    "engine": {
+        "files-from-controller": [
+            {
+                "src": "%utility-dir%/packrat",
+                "dest": "/usr/bin/"
+            }
+        ]
+    }
+}
