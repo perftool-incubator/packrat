@@ -434,8 +434,13 @@ function collect_cgroup_info() {
 
     create_dir "${DEST}"
 
+    if ! grep -q "cgroup" /proc/mounts; then
+	echo "Could not find cgroup mount"
+	return
+    fi
+
     local CPUSET_DIR=$(grep "cgroup/cpuset" /proc/mounts | awk '{ print $2 }')
-    if pushd "${CPUSET_DIR}" > /dev/null; then
+    if [ ! -z "${CPUSET_DIR}" ] && pushd "${CPUSET_DIR}" > /dev/null; then
 	local CPUSET_FILE="${DEST}/cpuset"
 
 	touch "${CPUSET_FILE}"
@@ -448,10 +453,12 @@ function collect_cgroup_info() {
 	done
 
 	popd > /dev/null
+    else
+	echo "Could not find CPUSET [${CPUSET_DIR}]"
     fi
 
     local CPU_DIR=$(grep "cgroup/cpu," /proc/mounts | awk '{ print $2 }')
-    if pushd "${CPU_DIR}" > /dev/null; then
+    if [ ! -z "${CPU_DIR}" ] && pushd "${CPU_DIR}" > /dev/null; then
 	local CPU_FILE="${DEST}/cpu"
 
 	touch "${CPU_FILE}"
@@ -464,6 +471,8 @@ function collect_cgroup_info() {
 	done
 
 	popd > /dev/null
+    else
+	echo "Could not find CPU [${CPU_DIR}]"
     fi
 }
 
