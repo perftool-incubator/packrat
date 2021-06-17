@@ -21,7 +21,8 @@
 		    "procps-ng",
 		    "libselinux-utils",
 		    "ethtool",
-		    "net-tools"
+		    "net-tools",
+		    "xz"
 		]
 	    }
 	}
