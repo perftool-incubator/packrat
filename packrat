@@ -98,6 +98,7 @@ function run_collectors() {
 
     collect_distro_info "${DEST}" > "${DEST}/distro.log" 2>&1 &
     collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1 &
+    collect_env_info "${DEST}" > "${DEST}/env.log" 2>&1 &
     collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1 &
     collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1 &
     collect_system_info "${DEST}" > "${DEST}/system.log" 2>&1 &
@@ -128,6 +129,18 @@ function collect_package_manager_info() {
     if which rpm > /dev/null 2>&1; then
 	rpm -qa > "${DEST}/rpm.qa.out" 2>&1
     fi
+}
+
+function collect_env_info() {
+    local DEST="${1}/env"
+
+    create_dir "${DEST}"
+
+    env > "${DEST}/env.out" 2>&1
+    pwd > "${DEST}/pwd.out" 2>&1
+    hostname --all-fqdns > "${DEST}/hostname.fqdns.out" 2>&1
+    hostname --alias > "${DEST}/hostname.alias.out" 2>&1
+    hostname --all-ip-addresses > "${DEST}/hostname.ip-addresses.out" 2>&1
 }
 
 function collect_cpu_info() {
