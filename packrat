@@ -109,6 +109,7 @@ function run_collectors() {
     collect_cgroup_info "${DEST}" > "${DEST}/cgroup.log" 2>&1 &
     collect_libvirt_info "${DEST}" > "${DEST}/libvirt.log" 2>&1 &
     collect_firewall_info "${DEST}" > "${DEST}/firewall.log" 2>&1 &
+    collect_container_info "${DEST}" > "${DEST}/container.log" 2>&1 &
 
     wait
 }
@@ -540,6 +541,22 @@ function collect_firewall_info() {
     ebtables -L > "${DEST}/ebtables.out" 2>&1
     nft list ruleset > "${DEST}/nft.out" 2>&1
     firewall-cmd --list-all > "${DEST}/firewall-cmd.list-all.out" 2>&1
+}
+
+function collect_container_info() {
+    local DEST="${1}/container"
+
+    create_dir "${DEST}"
+
+    podman info > "${DEST}/podman.info.out" 2>&1
+    podman info --format json > "${DEST}/podman.info.json" 2>&1
+    podman ps --all --size > "${DEST}/podman.ps.all.out" 2>&1
+    podman ps --namespace > "${DEST}/podman.ps.namespace.out" 2>&1
+    podman ps --external > "${DEST}/podman.ps.external.out" 2>&1
+    podman images --all --no-trunc > "${DEST}/podman.images.all.out" 2>&1
+    podman images --all --no-trunc --format json > "${DEST}/podman.images.all.json" 2>&1
+    podman version > "${DEST}/podman.version.out" 2>&1
+    podman version --format json > "${DEST}/podman.version.json" 2>&1
 }
 
 ################################################################################
