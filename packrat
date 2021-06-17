@@ -98,6 +98,7 @@ function run_collectors() {
 
     collect_distro_info "${DEST}" > "${DEST}/distro.log" 2>&1 &
     collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1 &
+    collect_env_info "${DEST}" > "${DEST}/env.log" 2>&1 &
     collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1 &
     collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1 &
     collect_system_info "${DEST}" > "${DEST}/system.log" 2>&1 &
@@ -108,9 +109,22 @@ function run_collectors() {
     collect_cgroup_info "${DEST}" > "${DEST}/cgroup.log" 2>&1 &
     collect_libvirt_info "${DEST}" > "${DEST}/libvirt.log" 2>&1 &
     collect_firewall_info "${DEST}" > "${DEST}/firewall.log" 2>&1 &
+    collect_container_info "${DEST}" > "${DEST}/container.log" 2>&1 &
 
     wait
 }
+
+function compress_data() {
+    local DEST="${1}"
+
+    local COMPRESS_LOG="${DEST}/compress.log.xz"
+
+    {
+        find "${DEST}" -type f -print0 | xargs -0 -L 1 xz -T0
+    } 2>&1 | xz -T0 > "${COMPRESS_LOG}"
+}
+
+################################################################################
 
 function collect_distro_info() {
     local DEST="${1}/distro"
@@ -128,6 +142,18 @@ function collect_package_manager_info() {
     if which rpm > /dev/null 2>&1; then
 	rpm -qa > "${DEST}/rpm.qa.out" 2>&1
     fi
+}
+
+function collect_env_info() {
+    local DEST="${1}/env"
+
+    create_dir "${DEST}"
+
+    env > "${DEST}/env.out" 2>&1
+    pwd > "${DEST}/pwd.out" 2>&1
+    hostname --all-fqdns > "${DEST}/hostname.fqdns.out" 2>&1
+    hostname --alias > "${DEST}/hostname.alias.out" 2>&1
+    hostname --all-ip-addresses > "${DEST}/hostname.ip-addresses.out" 2>&1
 }
 
 function collect_cpu_info() {
@@ -434,8 +460,13 @@ function collect_cgroup_info() {
 
     create_dir "${DEST}"
 
+    if ! grep -q "cgroup" /proc/mounts; then
+	echo "Could not find cgroup mount"
+	return
+    fi
+
     local CPUSET_DIR=$(grep "cgroup/cpuset" /proc/mounts | awk '{ print $2 }')
-    if pushd "${CPUSET_DIR}" > /dev/null; then
+    if [ ! -z "${CPUSET_DIR}" ] && pushd "${CPUSET_DIR}" > /dev/null; then
 	local CPUSET_FILE="${DEST}/cpuset"
 
 	touch "${CPUSET_FILE}"
@@ -448,10 +479,12 @@ function collect_cgroup_info() {
 	done
 
 	popd > /dev/null
+    else
+	echo "Could not find CPUSET [${CPUSET_DIR}]"
     fi
 
     local CPU_DIR=$(grep "cgroup/cpu," /proc/mounts | awk '{ print $2 }')
-    if pushd "${CPU_DIR}" > /dev/null; then
+    if [ ! -z "${CPU_DIR}" ] && pushd "${CPU_DIR}" > /dev/null; then
 	local CPU_FILE="${DEST}/cpu"
 
 	touch "${CPU_FILE}"
@@ -464,6 +497,8 @@ function collect_cgroup_info() {
 	done
 
 	popd > /dev/null
+    else
+	echo "Could not find CPU [${CPU_DIR}]"
     fi
 }
 
@@ -520,6 +555,24 @@ function collect_firewall_info() {
     firewall-cmd --list-all > "${DEST}/firewall-cmd.list-all.out" 2>&1
 }
 
+function collect_container_info() {
+    local DEST="${1}/container"
+
+    create_dir "${DEST}"
+
+    podman info > "${DEST}/podman.info.out" 2>&1
+    podman info --format json > "${DEST}/podman.info.json" 2>&1
+    podman ps --all --size > "${DEST}/podman.ps.all.out" 2>&1
+    podman ps --namespace > "${DEST}/podman.ps.namespace.out" 2>&1
+    podman ps --external > "${DEST}/podman.ps.external.out" 2>&1
+    podman images --all --no-trunc > "${DEST}/podman.images.all.out" 2>&1
+    podman images --all --no-trunc --format json > "${DEST}/podman.images.all.json" 2>&1
+    podman version > "${DEST}/podman.version.out" 2>&1
+    podman version --format json > "${DEST}/podman.version.json" 2>&1
+}
+
 ################################################################################
 
 run_collectors "${DEST_DIR}"
+
+compress_data "${DEST_DIR}"
