@@ -8,13 +8,13 @@
 	{
 	    "name": "default",
 	    "requirements": [
-		"dependencies"
+		"packrat_dependencies"
 	    ]
 	}
     ],
     "requirements": [
 	{
-	    "name": "dependencies",
+	    "name": "packrat_dependencies",
 	    "type": "distro",
 	    "distro_info": {
 		"packages": [
