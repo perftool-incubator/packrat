@@ -8,18 +8,72 @@
 	{
 	    "name": "default",
 	    "requirements": [
-		"packrat_dependencies"
+		"rpm_packrat_dependencies"
+	    ]
+	},
+	{
+	    "name": "rhubi7",
+	    "requirements": [
+		"rhubi7_packrat_dependencies"
+	    ]
+	},
+	{
+	    "name": "debian",
+	    "requirements": [
+		"deb_packrat_dependencies"
+	    ]
+	},
+	{
+	    "name": "opensuse",
+	    "requirements": [
+		"suse_packrat_dependencies"
 	    ]
 	}
     ],
     "requirements": [
 	{
-	    "name": "packrat_dependencies",
+	    "name": "rpm_packrat_dependencies",
 	    "type": "distro",
 	    "distro_info": {
 		"packages": [
 		    "procps-ng",
 		    "libselinux-utils",
+		    "ethtool",
+		    "net-tools",
+		    "xz"
+		]
+	    }
+	},
+	{
+	    "name": "rhubi7_packrat_dependencies",
+	    "type": "distro",
+	    "distro_info": {
+		"packages": [
+		    "procps-ng",
+		    "libselinux-utils",
+		    "net-tools",
+		    "xz"
+		]
+	    }
+	},
+	{
+	    "name": "deb_packrat_dependencies",
+	    "type": "distro",
+	    "distro_info": {
+		"packages": [
+		    "procps",
+		    "ethtool",
+		    "net-tools",
+		    "xz-utils"
+		]
+	    }
+	},
+	{
+	    "name": "suse_packrat_dependencies",
+	    "type": "distro",
+	    "distro_info": {
+		"packages": [
+		    "procps",
 		    "ethtool",
 		    "net-tools",
 		    "xz"
