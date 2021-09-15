@@ -1,0 +1,33 @@
+name: crucible-ci
+
+on:
+  # run on push or pull request events for the master branch only
+  pull_request:
+    branches: [ master ]
+
+  # allow for manual invocation from the actions tab
+  workflow_dispatch:
+
+jobs:
+  crucible-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout packrat
+      uses: actions/checkout@v2
+      with:
+        path: packrat
+
+    - name: Checkout crucible-ci
+      uses: actions/checkout@v2
+      with:
+        repository: perftool-incubator/crucible-ci
+        ref: main
+        path: crucible-ci
+
+    - name: Run crucible-ci->integration-tests
+      uses: ./crucible-ci/.github/actions/integration-tests
+      with:
+        artifact_tag: "packrat"
+        ci_target: "packrat"
+        ci_target_dir: ${{ github.workspace }}/packrat
