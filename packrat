@@ -446,9 +446,79 @@ function collect_net_info() {
 
 	touch "${ETHTOOL_FILE}"
 
+	local DEV=""
 	for DEV in $(ls -1d * 2> /dev/null); do
 	    ethtool "${DEV}" >> "${ETHTOOL_FILE}" 2>&1
 	    echo >> "${ETHTOOL_FILE}"
+	done
+
+	create_dir "${DEST}/sys-class-net"
+
+	for DEV in $(ls -1d * 2> /dev/null); do
+	    local DEV_FILE="${DEST}/sys-class-net/${DEV}"
+
+	    touch "${DEV_FILE}"
+
+	    if pushd "${DEV}" > /dev/null; then
+		local FILE=""
+		for FILE in $(find . -maxdepth 1 -type f | sort); do
+		    append_str "$(clean_path ${FILE}):" "${DEV_FILE}"
+		    append_file "${FILE}" "${DEV_FILE}"
+		    append_str "" "${DEV_FILE}"
+		done
+
+		local SUBDIR=""
+		for SUBDIR in "device"; do
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    for FILE in $(find . -type f -not -path "./net/*" | sort); do
+				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${DEV_FILE}"
+				append_file "${FILE}" "${DEV_FILE}"
+				append_str "" "${DEV_FILE}"
+			    done
+
+			    popd > /dev/null
+			fi
+		    fi
+		done
+
+		for SUBDIR in "statistics"; do
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    for FILE in $(find . -type f | sort); do
+				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${DEV_FILE}"
+				append_file "${FILE}" "${DEV_FILE}"
+				append_str "" "${DEV_FILE}"
+			    done
+
+			    popd > /dev/null
+			fi
+		    fi
+		done
+
+		local QSUBDIR=""
+		for SUBDIR in "queues"; do
+		    if [ -d "${SUBDIR}" ]; then
+			if pushd "${SUBDIR}" > /dev/null; then
+			    for QSUBDIR in $(ls -1d * | sort); do
+				if pushd "${QSUBDIR}" > /dev/null; then
+				    for FILE in $(find . -maxdepth 1 -type f | sort); do
+					append_str "${SUBDIR}/${QSUBDIR}/$(clean_path ${FILE}):" "${DEV_FILE}"
+					append_file "${FILE}" "${DEV_FILE}"
+					append_str "" "${DEV_FILE}"
+				    done
+
+				    popd > /dev/null
+				fi
+			    done
+
+			    popd > /dev/null
+			fi
+		    fi
+		done
+
+		popd > /dev/null
+	    fi
 	done
 
 	popd > /dev/null
