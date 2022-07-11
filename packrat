@@ -110,7 +110,6 @@ function run_collectors() {
     collect_libvirt_info "${DEST}" > "${DEST}/libvirt.log" 2>&1 &
     collect_firewall_info "${DEST}" > "${DEST}/firewall.log" 2>&1 &
     collect_container_info "${DEST}" > "${DEST}/container.log" 2>&1 &
-    collect_driver_info "${DEST}" > "${DEST}/driver.log" 2>&1 &
 
     wait
 }
@@ -181,6 +180,20 @@ function collect_cpu_info() {
 	done
 
 	popd > /dev/null
+    fi
+
+    if pushd /sys/devices/system/cpu/intel_pstate > /dev/null; then
+	local DRIVER_FILE="${DEST}/intel_pstate"
+
+    touch "${DRIVER_FILE}"
+
+    for FILE in $(find . -type f); do
+        append_str "$(clean_path ${FILE}):" "${DRIVER_FILE}"
+        append_file "${FILE}" "${DRIVER_FILE}"
+        append_str "" "${DRIVER_FILE}"
+    done
+
+    popd > /dev/null
     fi
 }
 
@@ -640,27 +653,6 @@ function collect_container_info() {
     podman images --all --no-trunc --format json > "${DEST}/podman.images.all.json" 2>&1
     podman version > "${DEST}/podman.version.out" 2>&1
     podman version --format json > "${DEST}/podman.version.json" 2>&1
-}
-
-function collect_driver_info() {
-    local DEST="${1}/driver"
-
-    create_dir "${DEST}"
-
-    if pushd /sys/devices/system/cpu/intel_pstate > /dev/null; then
-        local DRIVER_FILE="${DEST}/intel_pstate"
-
-        touch "${DRIVER_FILE}"
-
-        local FILE=""
-        for FILE in $(find . -type f); do
-            append_str "$(clean_path ${FILE}):" "${DRIVER_FILE}"
-            append_file "${FILE}" "${DRIVER_FILE}"
-            append_str "" "${DRIVER_FILE}"
-        done
-
-        popd > /dev/null
-    fi
 }
 
 ################################################################################
