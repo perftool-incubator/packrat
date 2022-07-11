@@ -168,32 +168,32 @@ function collect_cpu_info() {
     copy "/proc/cpuinfo" "${DEST}/proc-cpuinfo"
 
     if pushd /sys/devices/system/cpu > /dev/null; then
-	local CPU_FILE="${DEST}/sys-devices-system-cpu"
+	    local CPU_FILE="${DEST}/sys-devices-system-cpu"
 
-	touch "${CPU_FILE}"
+	    touch "${CPU_FILE}"
 
-	local FILE=""
-	for FILE in $(find . -type f); do
-	    append_str "$(clean_path ${FILE}):" "${CPU_FILE}"
-	    append_file "${FILE}" "${CPU_FILE}"
-	    append_str "" "${CPU_FILE}"
-	done
+	    local FILE=""
+	    for FILE in $(find . -type f); do
+	        append_str "$(clean_path ${FILE}):" "${CPU_FILE}"
+	        append_file "${FILE}" "${CPU_FILE}"
+	        append_str "" "${CPU_FILE}"
+	    done
 
-	popd > /dev/null
+	    popd > /dev/null
     fi
 
     if pushd /sys/devices/system/cpu/intel_pstate > /dev/null; then
-	local DRIVER_FILE="${DEST}/intel_pstate"
+        local DRIVER_FILE="${DEST}/intel_pstate"
 
-    touch "${DRIVER_FILE}"
+        touch "${DRIVER_FILE}"
 
-    for FILE in $(find . -type f); do
-        append_str "$(clean_path ${FILE}):" "${DRIVER_FILE}"
-        append_file "${FILE}" "${DRIVER_FILE}"
-        append_str "" "${DRIVER_FILE}"
-    done
+        for FILE in $(find . -type f); do
+            append_str "$(clean_path ${FILE}):" "${DRIVER_FILE}"
+            append_file "${FILE}" "${DRIVER_FILE}"
+            append_str "" "${DRIVER_FILE}"
+        done
 
-    popd > /dev/null
+        popd > /dev/null
     fi
 }
 
