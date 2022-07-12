@@ -195,6 +195,9 @@ function collect_cpu_info() {
 
         popd > /dev/null
     fi
+
+    touch "${DEST}/turbostat.out"
+    turbostat > "${DEST}/turbostat.out" 2>&1 & sleep 60s; kill $!
 }
 
 function collect_device_info() {
