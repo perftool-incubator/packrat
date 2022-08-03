@@ -485,7 +485,7 @@ function collect_net_info() {
 		for SUBDIR in "device"; do
 		    if [ -d "${SUBDIR}" ]; then
 			if pushd "${SUBDIR}" > /dev/null; then
-			    for FILE in $(find . -type f -not -path "./net/*" | sort); do
+			    for FILE in $(find . -type f -not -path "./net/*" -and -not -path "./infiniband/*" | sort); do
 				append_str "${SUBDIR}/$(clean_path ${FILE}):" "${DEV_FILE}"
 				append_file "${FILE}" "${DEV_FILE}"
 				append_str "" "${DEV_FILE}"
