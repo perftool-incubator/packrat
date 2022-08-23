@@ -132,6 +132,12 @@ function collect_distro_info() {
     create_dir "${DEST}"
 
     copy "/etc/os-release" "${DEST}/os-release"
+
+    if command -v tuned-adm > /dev/null; then
+	tuned-adm list > "${DEST}/tuned-adm.list.out" 2>&1
+
+	tar -cf "${DEST}/tuned.tar" /etc/tuned /usr/lib/tuned
+    fi
 }
 
 function collect_package_manager_info() {
