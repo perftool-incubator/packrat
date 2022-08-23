@@ -160,6 +160,8 @@ function collect_env_info() {
     hostname --all-fqdns > "${DEST}/hostname.fqdns.out" 2>&1
     hostname --alias > "${DEST}/hostname.alias.out" 2>&1
     hostname --all-ip-addresses > "${DEST}/hostname.ip-addresses.out" 2>&1
+
+    virt-what > "${DEST}/virt-what.out" 2>&1
 }
 
 function collect_cpu_info() {
