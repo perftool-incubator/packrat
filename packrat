@@ -132,6 +132,12 @@ function collect_distro_info() {
     create_dir "${DEST}"
 
     copy "/etc/os-release" "${DEST}/os-release"
+
+    if command -v tuned-adm > /dev/null; then
+	tuned-adm list > "${DEST}/tuned-adm.list.out" 2>&1
+
+	tar -cf "${DEST}/tuned.tar" /etc/tuned /usr/lib/tuned
+    fi
 }
 
 function collect_package_manager_info() {
@@ -154,6 +160,8 @@ function collect_env_info() {
     hostname --all-fqdns > "${DEST}/hostname.fqdns.out" 2>&1
     hostname --alias > "${DEST}/hostname.alias.out" 2>&1
     hostname --all-ip-addresses > "${DEST}/hostname.ip-addresses.out" 2>&1
+
+    virt-what > "${DEST}/virt-what.out" 2>&1
 }
 
 function collect_cpu_info() {
