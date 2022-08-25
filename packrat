@@ -654,7 +654,7 @@ function collect_container_info() {
 
     podman info > "${DEST}/podman.info.out" 2>&1
     podman info --format json > "${DEST}/podman.info.json" 2>&1
-    podman ps --all --size > "${DEST}/podman.ps.all.out" 2>&1
+    podman ps --all > "${DEST}/podman.ps.all.out" 2>&1
     podman ps --namespace > "${DEST}/podman.ps.namespace.out" 2>&1
     podman ps --external > "${DEST}/podman.ps.external.out" 2>&1
     podman images --all --no-trunc > "${DEST}/podman.images.all.out" 2>&1
