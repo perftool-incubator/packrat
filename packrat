@@ -19,6 +19,9 @@ elif ! mkdir "${DEST_DIR}"; then
     exit 3
 fi
 
+exec >${DEST_DIR}/packrat.log
+exec 2>&1
+
 ################################################################################
 
 function clean_path() {
@@ -96,22 +99,27 @@ function create_dir() {
 function run_collectors() {
     local DEST="${1}"
 
-    collect_distro_info "${DEST}" > "${DEST}/distro.log" 2>&1 &
-    collect_package_manager_info "${DEST}" > "${DEST}/package-manager.log" 2>&1 &
-    collect_env_info "${DEST}" > "${DEST}/env.log" 2>&1 &
-    collect_cpu_info "${DEST}" > "${DEST}/cpu.log" 2>&1 &
-    collect_device_info "${DEST}" > "${DEST}/device.log" 2>&1 &
-    collect_system_info "${DEST}" > "${DEST}/system.log" 2>&1 &
-    collect_kernel_info "${DEST}" > "${DEST}/kernel.log" 2>&1 &
-    collect_block_info "${DEST}" > "${DEST}/block.log" 2>&1 &
-    collect_memory_info "${DEST}" > "${DEST}/memory.log" 2>&1 &
-    collect_net_info "${DEST}" > "${DEST}/net.log" 2>&1 &
-    collect_cgroup_info "${DEST}" > "${DEST}/cgroup.log" 2>&1 &
-    collect_libvirt_info "${DEST}" > "${DEST}/libvirt.log" 2>&1 &
-    collect_firewall_info "${DEST}" > "${DEST}/firewall.log" 2>&1 &
-    collect_container_info "${DEST}" > "${DEST}/container.log" 2>&1 &
+    collectors=("distro" "package_manager" "env" "cpu" "device" "system" "kernel" "block" "memory" "net" "cgroup" "libvirt" "firewall" "container")
+    collector_pids=()
 
-    wait
+    echo "Total collectors: ${#collectors[@]}"
+    for collector in "${collectors[@]}"; do
+	echo "Launching '${collector}' collector"
+	collect_${collector}_info "${DEST}" > "${DEST}/${collector}.log" 2>&1 &
+	collector_pid=${!}
+	collector_pids+=("${collector_pid}")
+    done
+
+    total_rc=0
+    for idx in $( seq 0 $(( ${#collector_pids[@]} - 1)) ); do
+	echo -n "Waiting for '${collectors[${idx}]}' collector with PID ${collector_pids[${idx}]} to exit..."
+	wait ${collector_pids[${idx}]}
+	collector_rc=${?}
+	echo "exited with return code ${collector_rc}"
+	(( total_rc += ${collector_rc} ))
+    done
+
+    return ${total_rc}
 }
 
 function compress_data() {
@@ -120,7 +128,7 @@ function compress_data() {
     local COMPRESS_LOG="${DEST}/compress.log.xz"
 
     {
-        find "${DEST}" -type f -print0 | xargs -0 -L 1 xz -T0
+        find "${DEST}" -type f -and ! -name "packrat.log" -print0 | xargs -0 -L 1 xz -T0
     } 2>&1 | xz -T0 > "${COMPRESS_LOG}"
 }
 
@@ -138,6 +146,8 @@ function collect_distro_info() {
 
 	tar -cf "${DEST}/tuned.tar" /etc/tuned /usr/lib/tuned
     fi
+
+    return 0
 }
 
 function collect_package_manager_info() {
@@ -148,6 +158,8 @@ function collect_package_manager_info() {
     if which rpm > /dev/null 2>&1; then
 	rpm -qa > "${DEST}/rpm.qa.out" 2>&1
     fi
+
+    return 0
 }
 
 function collect_env_info() {
@@ -162,6 +174,8 @@ function collect_env_info() {
     hostname --all-ip-addresses > "${DEST}/hostname.ip-addresses.out" 2>&1
 
     virt-what > "${DEST}/virt-what.out" 2>&1
+
+    return 0
 }
 
 function collect_cpu_info() {
@@ -203,6 +217,8 @@ function collect_cpu_info() {
 
         popd > /dev/null
     fi
+
+    return 0
 }
 
 function collect_device_info() {
@@ -214,6 +230,8 @@ function collect_device_info() {
     lspci -vvv > "${DEST}/lspci.verbose.out" 2>&1
 
     copy "/proc/interrupts" "${DEST}/proc-interrupts"
+
+    return 0
 }
 
 function collect_system_info() {
@@ -223,6 +241,8 @@ function collect_system_info() {
 
     dmidecode > "${DEST}/dmidecode.out" 2>&1
     lstopo-no-graphics --whole-system --whole-io --verbose > "${DEST}/lstopo.out" 2>&1
+
+    return 0
 }
 
 function collect_kernel_info() {
@@ -308,6 +328,8 @@ function collect_kernel_info() {
 
 	popd > /dev/null
     fi
+
+    return 0
 }
 
 function collect_block_info() {
@@ -375,6 +397,8 @@ function collect_block_info() {
 
 	popd > /dev/null
     fi
+
+    return 0
 }
 
 function collect_memory_info() {
@@ -441,6 +465,8 @@ function collect_memory_info() {
 
 	popd > /dev/null
     fi
+
+    return 0
 }
 
 function collect_net_info() {
@@ -545,6 +571,8 @@ function collect_net_info() {
 
 	popd > /dev/null
     fi
+
+    return 0
 }
 
 function collect_cgroup_info() {
@@ -592,6 +620,8 @@ function collect_cgroup_info() {
     else
 	echo "Could not find CPU [${CPU_DIR}]"
     fi
+
+    return 0
 }
 
 function collect_libvirt_info() {
@@ -633,6 +663,8 @@ function collect_libvirt_info() {
 	virsh pool-dumpxml "${POOL}" > "${DEST}/pools/${POOL}.xml" 2>&1
 	virsh vol-list --pool "${POOL}" --details > "${DEST}/pools/virsh.vol-list.${POOL}.out" 2>&1
     done
+
+    return 0
 }
 
 function collect_firewall_info() {
@@ -645,6 +677,8 @@ function collect_firewall_info() {
     ebtables -L > "${DEST}/ebtables.out" 2>&1
     nft list ruleset > "${DEST}/nft.out" 2>&1
     firewall-cmd --list-all > "${DEST}/firewall-cmd.list-all.out" 2>&1
+
+    return 0
 }
 
 function collect_container_info() {
@@ -661,10 +695,21 @@ function collect_container_info() {
     podman images --all --no-trunc --format json > "${DEST}/podman.images.all.json" 2>&1
     podman version > "${DEST}/podman.version.out" 2>&1
     podman version --format json > "${DEST}/podman.version.json" 2>&1
+
+    return 0
 }
 
 ################################################################################
 
 run_collectors "${DEST_DIR}"
+run_collector_rc=${?}
+echo "run_collector_rc=${run_collector_rc}"
 
 compress_data "${DEST_DIR}"
+compress_data_rc=${?}
+echo "compress_data_rc=${compress_data_rc}"
+
+total_rc=$(( ${run_collector_rc} + ${compress_data_rc} ))
+echo "total_rc=${total_rc}"
+
+exit ${total_rc}
