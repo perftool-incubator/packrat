@@ -1,11 +1,13 @@
 name: crucible-ci
 
 on:
-  # run on push or pull request events for the master branch only
   pull_request:
     branches: [ master ]
-
-  # allow for manual invocation from the actions tab
+    paths-ignore:
+    - LICENSE
+    - '**.md'
+    - .github/workflows/faux-crucible-ci.yaml
+    - 'docs/**'
   workflow_dispatch:
 
 jobs:
