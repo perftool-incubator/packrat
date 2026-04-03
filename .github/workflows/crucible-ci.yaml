@@ -27,6 +27,8 @@ jobs:
             .github/workflows/run-crucible-tracking.yaml
             .github/workflows/crucible-ci.yaml
             docs/**
+      - name: Display changes
+        run: echo '${{ toJSON(steps.filter.outputs) }}' | jq .
 
   call-real-core-crucible-ci:
     needs: changes
